@@ -46,7 +46,7 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
 {
     Eigen::Quaterniond quadrotor_Q = Q ;
 
-    nav_msgs::Odometry odometry;
+    nav_msgs::Odometry odometry; // where is child frame id?
     odometry.header = header;
     odometry.header.frame_id = "world";
     odometry.pose.pose.position.x = P.x();

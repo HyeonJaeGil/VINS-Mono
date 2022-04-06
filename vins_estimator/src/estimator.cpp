@@ -86,7 +86,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
     if (!first_imu)
     {
         first_imu = true;
-        acc_0 = linear_acceleration;
+        acc_0 = linear_acceleration; //estimator_node.cpp의 acc_0과는 다른 변수.
         gyr_0 = angular_velocity;
     }
 
@@ -483,7 +483,7 @@ void Estimator::solveOdometry()
     }
 }
 
-void Estimator::vector2double()
+void Estimator::vector2double()  // 왜 이름이 vector2double?
 {
     for (int i = 0; i <= WINDOW_SIZE; i++)
     {
@@ -711,7 +711,7 @@ void Estimator::optimization()
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
         int j = i + 1;
-        if (pre_integrations[j]->sum_dt > 10.0)
+        if (pre_integrations[j]->sum_dt > 10.0)  // 무슨 조건?
             continue;
         IMUFactor* imu_factor = new IMUFactor(pre_integrations[j]);
         problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]);
