@@ -119,17 +119,17 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
 
 void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const std_msgs::Header &header)
 {
-    ROS_DEBUG("new image coming ------------------------------------------");
-    ROS_DEBUG("Adding feature points %lu", image.size());
+    ROS_INFO("new image coming ------------------------------------------");
+    ROS_INFO("Adding feature points %lu", image.size());
     if (f_manager.addFeatureCheckParallax(frame_count, image, td))
         marginalization_flag = MARGIN_OLD;
     else
         marginalization_flag = MARGIN_SECOND_NEW;
 
-    ROS_DEBUG("this frame is--------------------%s", marginalization_flag ? "reject" : "accept");
-    ROS_DEBUG("%s", marginalization_flag ? "Non-keyframe" : "Keyframe");
-    ROS_DEBUG("Solving %d", frame_count);
-    ROS_DEBUG("number of feature: %d", f_manager.getFeatureCount());
+    ROS_INFO("this frame is--------------------%s", marginalization_flag ? "reject" : "accept");
+    ROS_INFO("%s", marginalization_flag ? "Non-keyframe" : "Keyframe");
+    ROS_INFO("Solving %d", frame_count);
+    ROS_INFO("number of feature: %d", f_manager.getFeatureCount());
     Headers[frame_count] = header;
 
     ImageFrame imageframe(image, header.stamp.toSec());
@@ -761,8 +761,9 @@ void Estimator::optimization()
             }
             f_m_cnt++;
         }
+        
     }
-
+    ROS_INFO("pointFactor: %d", f_m_cnt);
     ROS_DEBUG("visual measurement count: %d", f_m_cnt);
     ROS_DEBUG("prepare for ceres: %f", t_prepare.toc());
 
@@ -817,8 +818,8 @@ void Estimator::optimization()
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     //cout << summary.BriefReport() << endl;
-    ROS_DEBUG("Iterations : %d", static_cast<int>(summary.iterations.size()));
-    ROS_DEBUG("solver costs: %f", t_solver.toc());
+    ROS_INFO("Iterations : %d", static_cast<int>(summary.iterations.size()));
+    ROS_INFO("solver costs: %f", t_solver.toc());
 
     double2vector();
 
