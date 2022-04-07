@@ -121,7 +121,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         sensor_msgs::ChannelFloat32 velocity_y_of_point;
 
         feature_points->header = img_msg->header;
-        feature_points->header.frame_id = "world";
+        feature_points->header.frame_id = "camera";
 
         vector<set<int>> hash_ids(NUM_OF_CAM);
         for (int i = 0; i < NUM_OF_CAM; i++)
@@ -177,6 +177,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
 
                 for (unsigned int j = 0; j < trackerData[i].cur_pts.size(); j++)
                 {
+                    // old feature일수록 red 색상, 새로운 feature는 blue
                     double len = std::min(1.0, 1.0 * trackerData[i].track_cnt[j] / WINDOW_SIZE);
                     cv::circle(tmp_img, trackerData[i].cur_pts[j], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
                     //draw speed line
