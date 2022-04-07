@@ -124,7 +124,7 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
         ROS_DEBUG("temporal optical flow costs: %fms", t_o.toc());
     }
 
-    for (auto &n : track_cnt)
+    for (auto &n : track_cnt) // track_cnt에 있는 모든 요소에 +1 해주기
         n++;
 
     if (PUB_THIS_FRAME)
@@ -138,7 +138,7 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
         ROS_DEBUG("detect feature begins");
         TicToc t_t;
         int n_max_cnt = MAX_CNT - static_cast<int>(forw_pts.size());
-        if (n_max_cnt > 0)
+        if (n_max_cnt > 0) // optical flow를 통한 예측이 살짝 아쉬우면 남은 분량만큼 새롭게 찾기
         {
             if(mask.empty())
                 cout << "mask is empty " << endl;
@@ -148,7 +148,7 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
                 cout << "wrong size " << endl;
             cv::goodFeaturesToTrack(forw_img, n_pts, MAX_CNT - forw_pts.size(), 0.01, MIN_DIST, mask);
         }
-        else
+        else  // optical flow가 만족스러운 결과를 낸 경우
             n_pts.clear();
         ROS_DEBUG("detect feature costs: %fms", t_t.toc());
 

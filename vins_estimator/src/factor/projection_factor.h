@@ -7,7 +7,11 @@
 #include "../utility/tic_toc.h"
 #include "../parameters.h"
 
-class ProjectionFactor : public ceres::SizedCostFunction<2, 7, 7, 7, 1>
+/*
+  residual 2차원, 변수는 4개가 사용되는데 각각의 dimension은 7, 7, 7, 1
+*/
+
+class ProjectionFactor : public ceres::SizedCostFunction<2, 7, 7, 7, 1> 
 {
   public:
     ProjectionFactor(const Eigen::Vector3d &_pts_i, const Eigen::Vector3d &_pts_j);
