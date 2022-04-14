@@ -293,6 +293,7 @@ void extrinsic_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
 
 void process()
 {
+    // loop closure option이 비활성화되어있으면 이 쓰레드는 아무것도 안하고 종료!
     if (!LOOP_CLOSURE)
         return;
     while (true)

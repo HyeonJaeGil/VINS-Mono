@@ -68,7 +68,7 @@ class Estimator
     MatrixXd Ap[2], backup_A;
     VectorXd bp[2], backup_b;
 
-    Matrix3d ric[NUM_OF_CAM];
+    Matrix3d ric[NUM_OF_CAM]; // imu2cam rotation R^i_c 맞나..?
     Vector3d tic[NUM_OF_CAM];
 
     Vector3d Ps[(WINDOW_SIZE + 1)];

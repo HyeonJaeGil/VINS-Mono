@@ -77,7 +77,7 @@ public:
 	double time_stamp; 
 	int index;
 	int local_index;
-	Eigen::Vector3d vio_T_w_i; 
+	Eigen::Vector3d vio_T_w_i; // 아래 T_w_i와는 뭐가 다른거지?
 	Eigen::Matrix3d vio_R_w_i; 
 	Eigen::Vector3d T_w_i;
 	Eigen::Matrix3d R_w_i;

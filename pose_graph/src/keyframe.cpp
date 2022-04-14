@@ -132,14 +132,16 @@ bool KeyFrame::searchInAera(const BRIEF::bitset window_descriptor,
     {
 
         int dis = HammingDis(window_descriptor, descriptors_old[i]);
-        if(dis < bestDist)
+        if(dis < bestDist) // dist가 작을수록 closer
         {
             bestDist = dis;
             bestIndex = i;
         }
     }
     //printf("best dist %d", bestDist);
-    if (bestIndex != -1 && bestDist < 80)
+	// 128 (best index) 보다 가까운 descriptor를 찾았고, 그 거리가 80 미만인 경우
+	// 그 descriptor의 keypoint 정보를 best_match에 전달해준다.
+    if (bestIndex != -1 && bestDist < 80) 
     {
       best_match = keypoints_old[bestIndex].pt;
       best_match_norm = keypoints_old_norm[bestIndex].pt;
@@ -156,14 +158,19 @@ void KeyFrame::searchByBRIEFDes(std::vector<cv::Point2f> &matched_2d_old,
                                 const std::vector<cv::KeyPoint> &keypoints_old,
                                 const std::vector<cv::KeyPoint> &keypoints_old_norm)
 {
+	// current keyframe에 속한 keypoint들의 window brief descriptor를 다 interate한다.
     for(int i = 0; i < (int)window_brief_descriptors.size(); i++)
     {
         cv::Point2f pt(0.f, 0.f);
         cv::Point2f pt_norm(0.f, 0.f);
+		// current keyframe의 keypoints 가운데,
+		// old 2d keypoints들과의 descriptor 거리가 충분히 가까운 keypoint인 경우
+		// status에 1을 밀어넣고, 아니라면 0을 넣는다.
         if (searchInAera(window_brief_descriptors[i], descriptors_old, keypoints_old, keypoints_old_norm, pt, pt_norm))
           status.push_back(1);
         else
           status.push_back(0);
+		// good match에 해당하는 old keypoint, old keypoint_norm도 저장한다.
         matched_2d_old.push_back(pt);
         matched_2d_old_norm.push_back(pt_norm);
     }
@@ -228,7 +235,7 @@ void KeyFrame::PnPRANSAC(const vector<cv::Point2f> &matched_2d_old_norm,
     {
         if (CV_MINOR_VERSION < 2)
             solvePnPRansac(matched_3d, matched_2d_old_norm, K, D, rvec, t, true, 100, sqrt(10.0 / 460.0), 0.99, inliers);
-        else
+        else // opencv3.4는 요거
             solvePnPRansac(matched_3d, matched_2d_old_norm, K, D, rvec, t, true, 100, 10.0 / 460.0, 0.99, inliers);
 
     }
@@ -242,15 +249,17 @@ void KeyFrame::PnPRANSAC(const vector<cv::Point2f> &matched_2d_old_norm,
         status[n] = 1;
     }
 
-    cv::Rodrigues(rvec, r);
+	// 3d point (world cooridinate), 2d point (old camera frame)을 input으로 가지는
+	// solvepnp가 반환하는 rvec, t는 각각 R^old_w, t^old_w이다.
+    cv::Rodrigues(rvec, r); // rotation vector (rvec) to rotation matrix r
     Matrix3d R_pnp, R_w_c_old;
     cv::cv2eigen(r, R_pnp);
     R_w_c_old = R_pnp.transpose();
     Vector3d T_pnp, T_w_c_old;
     cv::cv2eigen(t, T_pnp);
-    T_w_c_old = R_w_c_old * (-T_pnp);
+    T_w_c_old = R_w_c_old * (-T_pnp); // T_pnp = t^{c_old}_w
 
-    PnP_R_old = R_w_c_old * qic.transpose();
+    PnP_R_old = R_w_c_old * qic.transpose(); // R^w_c_old * R^c_i = R^w_i_old
     PnP_T_old = T_w_c_old - PnP_R_old * tic;
 
 }
@@ -297,7 +306,8 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	        cv::imwrite( path.str().c_str(), loop_match_img);
 	    }
 	#endif
-	//printf("search by des\n");
+
+	// current keyframe의 keypoints 가운데, BRIEF descriptor의 hamming distance로 inlier 판단
 	searchByBRIEFDes(matched_2d_old, matched_2d_old_norm, status, old_kf->brief_descriptors, old_kf->keypoints, old_kf->keypoints_norm);
 	reduceVector(matched_2d_cur, status);
 	reduceVector(matched_2d_old, status);
@@ -305,7 +315,6 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	reduceVector(matched_2d_old_norm, status);
 	reduceVector(matched_3d, status);
 	reduceVector(matched_id, status);
-	//printf("search by des finish\n");
 
 	#if 0 
 		if (DEBUG_IMAGE)
@@ -403,10 +412,15 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	Eigen::Vector3d relative_t;
 	Quaterniond relative_q;
 	double relative_yaw;
+
+ 	// min loop num은 25로 keyframe.h에 정의
 	if ((int)matched_2d_cur.size() > MIN_LOOP_NUM)
 	{
 		status.clear();
-	    PnPRANSAC(matched_2d_old_norm, matched_3d, status, PnP_T_old, PnP_R_old);
+		// old frame의 2d feature와 현재 frame의 3d feature를 pnpransac을 돌린다.
+		// PnP_T_old = t^w_i_old
+		// PnP_R_old = R^w_i_old
+	    PnPRANSAC(matched_2d_old_norm, matched_3d, status, PnP_T_old, PnP_R_old); 
 	    reduceVector(matched_2d_cur, status);
 	    reduceVector(matched_2d_old, status);
 	    reduceVector(matched_2d_cur_norm, status);
@@ -468,24 +482,31 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	        }
 	    #endif
 	}
-
+	
+ 	// min loop num은 25로 keyframe.h에 정의
 	if ((int)matched_2d_cur.size() > MIN_LOOP_NUM)
 	{
-	    relative_t = PnP_R_old.transpose() * (origin_vio_T - PnP_T_old);
-	    relative_q = PnP_R_old.transpose() * origin_vio_R;
+		// PnP_T_old = t^w_i_old, PnP_R_old = R^w_i_old
+	    relative_t = PnP_R_old.transpose() * (origin_vio_T - PnP_T_old); // old imu frame에서 표현한 old_imu에서 cur_imu까지의 t
+	    relative_q = PnP_R_old.transpose() * origin_vio_R; // old imu frame에서 표현한 old_imu에서 cur_imu까지의 q
 	    relative_yaw = Utility::normalizeAngle(Utility::R2ypr(origin_vio_R).x() - Utility::R2ypr(PnP_R_old).x());
 	    //printf("PNP relative\n");
 	    //cout << "pnp relative_t " << relative_t.transpose() << endl;
 	    //cout << "pnp relative_yaw " << relative_yaw << endl;
 	    if (abs(relative_yaw) < 30.0 && relative_t.norm() < 20.0)
 	    {
-
+			/* 
+			has_loop, loop_index는 모두 KeyFrame의 멤버 변수이다.
+			나중을 위해 (optimize4DOF) 이 정보를 저장해놓는다.
+			*/
 	    	has_loop = true;
 	    	loop_index = old_kf->index;
+
+			// Eigen::Matrix<double, 8, 1 > loop_info;
 	    	loop_info << relative_t.x(), relative_t.y(), relative_t.z(),
 	    	             relative_q.w(), relative_q.x(), relative_q.y(), relative_q.z(),
 	    	             relative_yaw;
-	    	if(FAST_RELOCALIZATION)
+	    	if(FAST_RELOCALIZATION) // 얘는 나중에 분석하자.... TODO
 	    	{
 			    sensor_msgs::PointCloud msg_match_points;
 			    msg_match_points.header.stamp = ros::Time(time_stamp);

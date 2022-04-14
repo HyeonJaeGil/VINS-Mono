@@ -264,6 +264,8 @@ void process()
                 }
             }
             // set relocalization frame
+            // "/pose_graph/match_points" 토픽이 들어왔을 때, 이 pointcloud 정보를 받아와서
+            // reloFrame으로 설정한다는 코드
             sensor_msgs::PointCloudConstPtr relo_msg = NULL;
             while (!relo_buf.empty())
             {

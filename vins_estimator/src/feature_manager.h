@@ -45,7 +45,9 @@ class FeaturePerId
 {
   public:
     const int feature_id;
-    int start_frame;
+    // start frame은 frame count로 초기화된다.
+    // 참고로 frame count는 window 내에서 몇 번째인지를 나타낸다.
+    int start_frame; 
     vector<FeaturePerFrame> feature_per_frame;
 
     int used_num;

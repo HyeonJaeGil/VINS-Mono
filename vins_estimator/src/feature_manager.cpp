@@ -201,13 +201,15 @@ VectorXd FeatureManager::getDepthVector()
 
 void FeatureManager::triangulate(Vector3d Ps[], Vector3d tic[], Matrix3d ric[])
 {
-    for (auto &it_per_id : feature)
+    for (auto &it_per_id : feature) // feature 하나하나에 대해서 for loop
     {
-        it_per_id.used_num = it_per_id.feature_per_frame.size();
+        it_per_id.used_num = it_per_id.feature_per_frame.size(); // 총 몇 개 frame에서 봤는지
         if (!(it_per_id.used_num >= 2 && it_per_id.start_frame < WINDOW_SIZE - 2))
             continue;
-
-        if (it_per_id.estimated_depth > 0)
+        
+        // 아무것도 안하면 estimated_depth=-1인데,  
+        // 이 값이 0보다 크다는 것은 triangulation이 이미 진행되었다는 의미 
+        if (it_per_id.estimated_depth > 0) 
             continue;
         int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
 
@@ -215,6 +217,10 @@ void FeatureManager::triangulate(Vector3d Ps[], Vector3d tic[], Matrix3d ric[])
         Eigen::MatrixXd svd_A(2 * it_per_id.feature_per_frame.size(), 4);
         int svd_idx = 0;
 
+        /*
+        _0 이 붙은 R,t는 그 feature가 처음 관측된 frame i를 의미
+        P_0 = frame_i (camera)의 [R|t]
+        */
         Eigen::Matrix<double, 3, 4> P0;
         Eigen::Vector3d t0 = Ps[imu_i] + Rs[imu_i] * tic[0];
         Eigen::Matrix3d R0 = Rs[imu_i] * ric[0];

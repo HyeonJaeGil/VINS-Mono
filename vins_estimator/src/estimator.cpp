@@ -104,6 +104,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
         linear_acceleration_buf[frame_count].push_back(linear_acceleration);
         angular_velocity_buf[frame_count].push_back(angular_velocity);
 
+        // 최신 measurement를 사용해서 현재 frame count에 대한 R, P, V 업데이트
         int j = frame_count;         
         Vector3d un_acc_0 = Rs[j] * (acc_0 - Bas[j]) - g;
         Vector3d un_gyr = 0.5 * (gyr_0 + angular_velocity) - Bgs[j];
@@ -113,7 +114,7 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
         Ps[j] += dt * Vs[j] + 0.5 * dt * dt * un_acc;
         Vs[j] += dt * un_acc;
     }
-    acc_0 = linear_acceleration;
+    acc_0 = linear_acceleration; // 최신 측정값으로 update
     gyr_0 = angular_velocity;
 }
 
@@ -121,7 +122,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 {
     ROS_INFO("new image coming ------------------------------------------");
     ROS_INFO("Adding feature points %lu", image.size());
-    if (f_manager.addFeatureCheckParallax(frame_count, image, td))
+    if (f_manager.addFeatureCheckParallax(frame_count, image, td)) // f_manager 안에 feature 추가하고 parallax도 계산하는 함수로 보인다.
         marginalization_flag = MARGIN_OLD;
     else
         marginalization_flag = MARGIN_SECOND_NEW;
@@ -477,6 +478,10 @@ void Estimator::solveOdometry()
     if (solver_flag == NON_LINEAR)
     {
         TicToc t_tri;
+        // f_manager가 가지고 있는 feature 정보를 기반으로,
+        // (f_manager 안에는 state Rotation 정보 Rs도 있음)
+        // 전달받는 state position 정보, t^i_c, R^i_c 를 이용해
+        // feature triangulation을 진행하는 코드
         f_manager.triangulate(Ps, tic, ric);
         ROS_DEBUG("triangulation costs %f", t_tri.toc());
         optimization();
@@ -1136,6 +1141,11 @@ void Estimator::setReloFrame(double _frame_stamp, int _frame_index, vector<Vecto
     prev_relo_r = _relo_r;
     for(int i = 0; i < WINDOW_SIZE; i++)
     {
+        // pose graph node로부터 matched point가 들어왔을 때,
+        // 이 pointcloud의 header를 체크해서 sliding window 안의 
+        // state와 같은 것이 있다면, relocalization flag를 올리고 
+        // rel_Pose를 설정.
+        // 정확히 뭔 코드인지는 논문이랑 같이 봐야할 듯 하다.
         if(relo_frame_stamp == Headers[i].stamp.toSec())
         {
             relo_frame_local_index = i;

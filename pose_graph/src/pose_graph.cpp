@@ -44,6 +44,11 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
     //shift to base frame
     Vector3d vio_P_cur;
     Matrix3d vio_R_cur;
+    /*
+    keyframe의 sequence는 1에서부터, sequence_cnt는 0에서부터 시작.
+    이 둘은 맨 처음 addKeyFrame 함수 호출 시점에는 무조건 다를 수 밖에 없음
+    물론, 새로운 sequence를 시작한 후에 처음 호출하는 addKeyFrame에서도 다를 것이다.
+    */
     if (sequence_cnt != cur_kf->sequence)
     {
         sequence_cnt++;
@@ -56,14 +61,14 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
         m_drift.unlock();
     }
     
-    cur_kf->getVioPose(vio_P_cur, vio_R_cur);
+    cur_kf->getVioPose(vio_P_cur, vio_R_cur); // keyframe 생성 시 전달받은 vio pose
     vio_P_cur = w_r_vio * vio_P_cur + w_t_vio;
     vio_R_cur = w_r_vio *  vio_R_cur;
     cur_kf->updateVioPose(vio_P_cur, vio_R_cur);
     cur_kf->index = global_index;
     global_index++;
 	int loop_index = -1;
-    if (flag_detect_loop)
+    if (flag_detect_loop) // keyframe 추가할 때에 1(true)로 전달된 값
     {
         TicToc tmp_t;
         loop_index = detectLoop(cur_kf, cur_kf->index);
@@ -72,16 +77,17 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
     {
         addKeyFrameIntoVoc(cur_kf);
     }
-	if (loop_index != -1)
+	if (loop_index != -1) // loop를 찾은 경우
 	{
         //printf(" %d detect loop with %d \n", cur_kf->index, loop_index);
         KeyFrame* old_kf = getKeyFrame(loop_index);
 
-        if (cur_kf->findConnection(old_kf))
+        // outlier까지 체크한 결과 loop가 맞는 경우     
+        if (cur_kf->findConnection(old_kf)) 
         {
             if (earliest_loop_index > loop_index || earliest_loop_index == -1)
                 earliest_loop_index = loop_index;
-
+// 여기서부터는 TODO (04/14)
             Vector3d w_P_old, w_P_cur, vio_P_cur;
             Matrix3d w_R_old, w_R_cur, vio_R_cur;
             old_kf->getVioPose(w_P_old, w_R_old);
@@ -135,7 +141,7 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
     R = r_drift * R;
     cur_kf->updatePose(P, R);
     Quaterniond Q{R};
-    geometry_msgs::PoseStamped pose_stamped;
+    geometry_msgs::PoseStamped pose_stamped; // 왜 있는거지?
     pose_stamped.header.stamp = ros::Time(cur_kf->time_stamp);
     pose_stamped.header.frame_id = "world";
     pose_stamped.pose.position.x = P.x() + VISUALIZATION_SHIFT_X;
@@ -227,6 +233,7 @@ void PoseGraph::loadKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
         KeyFrame* old_kf = getKeyFrame(loop_index);
         if (cur_kf->findConnection(old_kf))
         {
+            // loop가 발견된 가장 옛날의 index를 earliest_loop_index로 설정
             if (earliest_loop_index > loop_index || earliest_loop_index == -1)
                 earliest_loop_index = loop_index;
             m_optimize_buf.lock();
@@ -305,7 +312,9 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
 {
     // put image into image_pool; for visualization
     cv::Mat compressed_image;
-    if (DEBUG_IMAGE)
+    // 사용자의 save image option이 true인 경우, 
+    // image pool 안에다가 (376,240) 크기로 줄이고 feature 개수 기재한 이미지를 넣기
+    if (DEBUG_IMAGE) 
     {
         int feature_num = keyframe->keypoints.size();
         cv::resize(keyframe->image, compressed_image, cv::Size(376, 240));
@@ -316,7 +325,12 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
     //first query; then add this frame into database!
     QueryResults ret;
     TicToc t_query;
-    db.query(keyframe->brief_descriptors, ret, 4, frame_index - 50);
+    /*
+    query로 주는 keyframe보다 50개 이전의 database 가운데,
+    최대 4개의 후보를 ret에 반환하는 함수.
+    ret는 std::vector<Result>를 상속받은 클래스이다.
+    */
+    db.query(keyframe->brief_descriptors, ret, 4, frame_index - 50); 
     //printf("query time: %f", t_query.toc());
     //cout << "Searching for Image " << frame_index << ". " << ret << endl;
 
@@ -339,9 +353,9 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
         {
             int tmp_index = ret[i].Id;
             auto it = image_pool.find(tmp_index);
-            cv::Mat tmp_image = (it->second).clone();
+            cv::Mat tmp_image = (it->second).clone(); // loop로 찾은 image
             putText(tmp_image, "index:  " + to_string(tmp_index) + "loop score:" + to_string(ret[i].Score), cv::Point2f(10, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255));
-            cv::hconcat(loop_result, tmp_image, loop_result);
+            cv::hconcat(loop_result, tmp_image, loop_result); // input, input, output 순서
         }
     }
     // a good match with its nerghbour
@@ -353,7 +367,7 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
             {          
                 find_loop = true;
                 int tmp_index = ret[i].Id;
-                if (DEBUG_IMAGE && 0)
+                if (DEBUG_IMAGE && 0) // 실행 안함
                 {
                     auto it = image_pool.find(tmp_index);
                     cv::Mat tmp_image = (it->second).clone();
@@ -375,6 +389,7 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
         int min_index = -1;
         for (unsigned int i = 0; i < ret.size(); i++)
         {
+            // score가 0.015 이상이고, ret 중에 가장 entry id가 작은 index를 취한다.
             if (min_index == -1 || (ret[i].Id < min_index && ret[i].Score > 0.015))
                 min_index = ret[i].Id;
         }
