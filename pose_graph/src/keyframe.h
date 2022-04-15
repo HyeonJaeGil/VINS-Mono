@@ -76,7 +76,7 @@ public:
 
 	double time_stamp; 
 	int index;
-	int local_index;
+	int local_index; // 용도가 아마도 4DoF optimize할 때 시작 frame index를 local_index=0 으로 잡고 iterate하기 때문인 듯?
 	Eigen::Vector3d vio_T_w_i; // 아래 T_w_i와는 뭐가 다른거지?
 	Eigen::Matrix3d vio_R_w_i; 
 	Eigen::Vector3d T_w_i;

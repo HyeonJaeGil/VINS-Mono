@@ -148,8 +148,9 @@ void RotationMatrixTranspose(const T R[9], T inv_R[9])
 	inv_R[8] = R[8];
 };
 
+// R과 t의 곱으로 r_t를 구하는 함수
 template <typename T> 
-void RotationMatrixRotatePoint(const T R[9], const T t[3], T r_t[3])
+void RotationMatrixRotatePoint(const T R[9], const T t[3], T r_t[3]) 
 {
 	r_t[0] = R[0] * t[0] + R[1] * t[1] + R[2] * t[2];
 	r_t[1] = R[3] * t[0] + R[4] * t[1] + R[5] * t[2];
@@ -158,12 +159,14 @@ void RotationMatrixRotatePoint(const T R[9], const T t[3], T r_t[3])
 
 struct FourDOFError
 {
+	// 코드 상으로는 이전 frame에서 표현한 이전->현재 translation 성분 3개, 이전->현재 yaw값 차이, 이전 frame의 pitch, roll 전달
 	FourDOFError(double t_x, double t_y, double t_z, double relative_yaw, double pitch_i, double roll_i)
 				  :t_x(t_x), t_y(t_y), t_z(t_z), relative_yaw(relative_yaw), pitch_i(pitch_i), roll_i(roll_i){}
 
 	template <typename T>
 	bool operator()(const T* const yaw_i, const T* ti, const T* yaw_j, const T* tj, T* residuals) const
 	{
+		// i가 이전 frame, j가 현재 frame
 		T t_w_ij[3];
 		t_w_ij[0] = tj[0] - ti[0];
 		t_w_ij[1] = tj[1] - ti[1];
@@ -177,7 +180,7 @@ struct FourDOFError
 		RotationMatrixTranspose(w_R_i, i_R_w);
 		// rotation matrix rotate point
 		T t_i_ij[3];
-		RotationMatrixRotatePoint(i_R_w, t_w_ij, t_i_ij);
+		RotationMatrixRotatePoint(i_R_w, t_w_ij, t_i_ij); // t_i_ij = i_R_w * t_w_ij
 
 		residuals[0] = (t_i_ij[0] - T(t_x));
 		residuals[1] = (t_i_ij[1] - T(t_y));

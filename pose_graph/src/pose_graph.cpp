@@ -95,14 +95,18 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
 
             Vector3d relative_t;
             Quaterniond relative_q;
-            relative_t = cur_kf->getLoopRelativeT();
+            relative_t = cur_kf->getLoopRelativeT(); // t^old_cur
             relative_q = (cur_kf->getLoopRelativeQ()).toRotationMatrix();
-            w_P_cur = w_R_old * relative_t + w_P_old;
-            w_R_cur = w_R_old * relative_q;
+            w_P_cur = w_R_old * relative_t + w_P_old; // R^w_old * t^old_cur + t^w_old =  t^w_cur
+            w_R_cur = w_R_old * relative_q; // R^w_old * R^old_cur = R^w_cur
             double shift_yaw;
             Matrix3d shift_r;
-            Vector3d shift_t; 
-            shift_yaw = Utility::R2ypr(w_R_cur).x() - Utility::R2ypr(vio_R_cur).x();
+            Vector3d shift_t;
+            /*
+            w_R_cur는 loop로 판단한 실제 current frame의 rotation, 
+            vio_R_cur는 vio를 통해 estimate 해왔던 current frame의 rotation 
+            */
+            shift_yaw = Utility::R2ypr(w_R_cur).x() - Utility::R2ypr(vio_R_cur).x(); 
             shift_r = Utility::ypr2R(Vector3d(shift_yaw, 0, 0));
             shift_t = w_P_cur - w_R_cur * vio_R_cur.transpose() * vio_P_cur; 
             // shift vio pose of whole sequence to the world frame
@@ -126,10 +130,10 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
                         (*it)->updateVioPose(vio_P_cur, vio_R_cur);
                     }
                 }
-                sequence_loop[cur_kf->sequence] = 1;
+                sequence_loop[cur_kf->sequence] = 1; // vector<bool> sequence_loop;
             }
             m_optimize_buf.lock();
-            optimize_buf.push(cur_kf->index);
+            optimize_buf.push(cur_kf->index); // optimizer thread의 optimize4DoF() start! 
             m_optimize_buf.unlock();
         }
 	}
@@ -432,7 +436,7 @@ void PoseGraph::optimize4DoF()
         if (cur_index != -1)
         {
             printf("optimize pose graph \n");
-            TicToc tmp_t;
+            TicToc tmp_t; // 변수명좀 똑바로 (중복 안되게) 씁시다 제발..
             m_keyframelist.lock();
             KeyFrame* cur_kf = getKeyFrame(cur_index);
 
@@ -452,7 +456,7 @@ void PoseGraph::optimize4DoF()
             options.max_num_iterations = 5;
             ceres::Solver::Summary summary;
             ceres::LossFunction *loss_function;
-            loss_function = new ceres::HuberLoss(0.1);
+            loss_function = new ceres::HuberLoss(0.1); // delta=0.1인 huber loss
             //loss_function = new ceres::CauchyLoss(1.0);
             ceres::LocalParameterization* angle_local_parameterization =
                 AngleLocalParameterization::Create();
@@ -462,7 +466,7 @@ void PoseGraph::optimize4DoF()
             int i = 0;
             for (it = keyframelist.begin(); it != keyframelist.end(); it++)
             {
-                if ((*it)->index < first_looped_index)
+                if ((*it)->index < first_looped_index) // loop index 이후의 keyframe에 대해서만 최적화
                     continue;
                 (*it)->local_index = i;
                 Quaterniond tmp_q;
@@ -498,8 +502,8 @@ void PoseGraph::optimize4DoF()
                   {
                     Vector3d euler_conncected = Utility::R2ypr(q_array[i-j].toRotationMatrix());
                     Vector3d relative_t(t_array[i][0] - t_array[i-j][0], t_array[i][1] - t_array[i-j][1], t_array[i][2] - t_array[i-j][2]);
-                    relative_t = q_array[i-j].inverse() * relative_t;
-                    double relative_yaw = euler_array[i][0] - euler_array[i-j][0];
+                    relative_t = q_array[i-j].inverse() * relative_t; // i-j frame에서 표현한, i-j frame에서 i frame 까지의 t
+                    double relative_yaw = euler_array[i][0] - euler_array[i-j][0]; // i-j frame을 기준으로 i frame이 얼마나 돌아갔는지를 world frame 기준으로 표현한 값
                     ceres::CostFunction* cost_function = FourDOFError::Create( relative_t.x(), relative_t.y(), relative_t.z(),
                                                    relative_yaw, euler_conncected.y(), euler_conncected.z());
                     problem.AddResidualBlock(cost_function, NULL, euler_array[i-j], 
@@ -512,6 +516,10 @@ void PoseGraph::optimize4DoF()
                 //add loop edge
                 
                 if((*it)->has_loop)
+                /*
+                weight는 코드상으로 1로 되어있다.
+                angle(yaw) difference에 대해서는 loop edge의 경우 1/10만큼의 가중치를 준다.
+                */
                 {
                     assert((*it)->loop_index >= first_looped_index);
                     int connected_index = getKeyFrame((*it)->loop_index)->local_index;
@@ -563,7 +571,7 @@ void PoseGraph::optimize4DoF()
 
             Vector3d cur_t, vio_t;
             Matrix3d cur_r, vio_r;
-            cur_kf->getPose(cur_t, cur_r);
+            cur_kf->getPose(cur_t, cur_r); // pose와 vio_pose는 다른 것이었음
             cur_kf->getVioPose(vio_t, vio_r);
             m_drift.lock();
             yaw_drift = Utility::R2ypr(cur_r).x() - Utility::R2ypr(vio_r).x();

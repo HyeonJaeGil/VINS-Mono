@@ -325,7 +325,7 @@ void process()
             pubCameraPose(estimator, header);
             pubPointCloud(estimator, header);
             pubTF(estimator, header);
-            pubKeyframe(estimator);
+            pubKeyframe(estimator); // estimator의 9번째 index에 해당하는 odometry, feature pointcloud를 publish
             if (relo_msg != NULL)
                 pubRelocalization(estimator);
             //ROS_ERROR("end: %f, at %f", img_msg->header.stamp.toSec(), ros::Time::now().toSec());

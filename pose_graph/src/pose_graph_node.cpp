@@ -303,6 +303,11 @@ void process()
         nav_msgs::Odometry::ConstPtr pose_msg = NULL;
 
         // find out the messages with same time stamp
+        /* 
+        image_buf: IMAGE_TOPIC
+        point_buf: /vins_estimator/keyframe_point
+        pose_buf:  /vins_estimator/keyframe_pose
+        */
         m_buf.lock();
         if(!image_buf.empty() && !point_buf.empty() && !pose_buf.empty())
         {
