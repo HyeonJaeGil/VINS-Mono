@@ -506,7 +506,14 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	    	loop_info << relative_t.x(), relative_t.y(), relative_t.z(),
 	    	             relative_q.w(), relative_q.x(), relative_q.y(), relative_q.z(),
 	    	             relative_yaw;
-	    	if(FAST_RELOCALIZATION) // 얘는 나중에 분석하자.... TODO
+	    	/*
+			fast relocalization이 활성화되면 pose_graph/match_points 라는 토픽이 발행되는데,
+			estimator node가 이 토픽을 듣고 있기 때문에 정보가 들어오면 estimator 내의 window optimzation
+			안에 relocalization residual을 추가한다.
+			즉, pose graph의 계산을 기다린 후 estimator의 pose를 update하는 것이 아닌,
+			estimator에서도 빠르게 relocalization을 수행한다는 의미이다.
+			*/
+			if(FAST_RELOCALIZATION)
 	    	{
 			    sensor_msgs::PointCloud msg_match_points;
 			    msg_match_points.header.stamp = ros::Time(time_stamp);
