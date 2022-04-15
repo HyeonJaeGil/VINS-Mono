@@ -788,6 +788,14 @@ void Estimator::optimization()
             int start = it_per_id.start_frame;
             if(start <= relo_frame_local_index)
             {   
+                /*
+                혼란스러울 수 있는데, match_points의 각 성분은 3d vector이지만 
+                그 성분은 feature match가 이루어진 old frame의 x,y좌표 + feature id이다.
+                따라서 아래 while문은 feature id가 같은 것을 찾는 과정이고,
+                같은 feature id를 찾으면 pts_j (x_old,y_old,1)를 만들어 projection factor를 추가한다.
+                참고로 match_points는 pose_graph node 쪽에서 pose_graph/match_points topic으로 넘어왔으며,
+                그 topic 안에는 현재 keyframe의 feature와 feature match가 잘 된 과거 keyframe의 2d feature 정보가 들어있다.
+                */
                 while((int)match_points[retrive_feature_index].z() < it_per_id.feature_id)
                 {
                     retrive_feature_index++;
@@ -936,7 +944,7 @@ void Estimator::optimization()
         last_marginalization_parameter_blocks = parameter_blocks;
         
     }
-    else
+    else // marginalization_flag == MARGIN_SECOND_NEW
     {
         if (last_marginalization_info &&
             std::count(std::begin(last_marginalization_parameter_blocks), std::end(last_marginalization_parameter_blocks), para_Pose[WINDOW_SIZE - 1]))
@@ -1148,7 +1156,7 @@ void Estimator::setReloFrame(double _frame_stamp, int _frame_index, vector<Vecto
         // 정확히 뭔 코드인지는 논문이랑 같이 봐야할 듯 하다.
         if(relo_frame_stamp == Headers[i].stamp.toSec())
         {
-            relo_frame_local_index = i;
+            relo_frame_local_index = i; // window 내 pose 중 relocalization이 발동한 index 정보
             relocalization_info = 1;
             for (int j = 0; j < SIZE_POSE; j++)
                 relo_Pose[j] = para_Pose[i][j];
