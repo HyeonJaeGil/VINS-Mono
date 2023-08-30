@@ -66,8 +66,8 @@ void printStatistics(const Estimator &estimator, double t)
 {
     if (estimator.solver_flag != Estimator::SolverFlag::NON_LINEAR)
         return;
-    printf("position: %f, %f, %f\r", estimator.Ps[WINDOW_SIZE].x(), estimator.Ps[WINDOW_SIZE].y(), estimator.Ps[WINDOW_SIZE].z());
-    ROS_INFO_STREAM("position: " << estimator.Ps[WINDOW_SIZE].transpose());
+    printf("position: %f, %f, %f (distance: %f)\r", estimator.Ps[WINDOW_SIZE].x(), estimator.Ps[WINDOW_SIZE].y(), estimator.Ps[WINDOW_SIZE].z(), estimator.Ps[WINDOW_SIZE].norm());
+    ROS_DEBUG_STREAM("position: " << estimator.Ps[WINDOW_SIZE].transpose());
     ROS_DEBUG_STREAM("orientation: " << estimator.Vs[WINDOW_SIZE].transpose());
     for (int i = 0; i < NUM_OF_CAM; i++)
     {
