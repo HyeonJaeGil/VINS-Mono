@@ -50,7 +50,11 @@ void BRIEF::compute(const cv::Mat &image,
     cv::Mat aux;
     if(image.depth() == 3)
     {
+#if CV_VERSION_MAJOR == 3
       cv::cvtColor(image, aux, CV_RGB2GRAY);
+#elif CV_VERSION_MAJOR == 4
+      cv::cvtColor(image, aux, cv::COLOR_RGB2GRAY);
+#endif
     }
     else
     {

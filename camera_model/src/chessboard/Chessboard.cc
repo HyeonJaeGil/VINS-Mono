@@ -17,25 +17,42 @@ Chessboard::Chessboard(cv::Size boardSize, cv::Mat& image)
 {
     if (image.channels() == 1)
     {
+#if CV_VERSION_MAJOR == 3
         cv::cvtColor(image, mSketch, CV_GRAY2BGR);
+#else if CV_VERSION_MAJOR == 4
+        cv::cvtColor(image, mSketch, cv::COLOR_GRAY2BGR);
+#endif
         image.copyTo(mImage);
     }
     else
     {
         image.copyTo(mSketch);
+#if CV_VERSION_MAJOR == 3
         cv::cvtColor(image, mImage, CV_BGR2GRAY);
+#else if CV_VERSION_MAJOR == 4
+        cv::cvtColor(image, mImage, cv::COLOR_BGR2GRAY);
+#endif
     }
 }
 
 void
 Chessboard::findCorners(bool useOpenCV)
 {
+#if CV_VERSION_MAJOR == 3
     mCornersFound = findChessboardCorners(mImage, mBoardSize, mCorners,
                                           CV_CALIB_CB_ADAPTIVE_THRESH +
                                           CV_CALIB_CB_NORMALIZE_IMAGE +
                                           CV_CALIB_CB_FILTER_QUADS +
                                           CV_CALIB_CB_FAST_CHECK,
                                           useOpenCV);
+#else if CV_VERSION_MAJOR == 4
+    mCornersFound = findChessboardCorners(mImage, mBoardSize, mCorners,
+                                          cv::CALIB_CB_ADAPTIVE_THRESH +
+                                          cv::CALIB_CB_NORMALIZE_IMAGE +
+                                          cv::CALIB_CB_FILTER_QUADS +
+                                          cv::CALIB_CB_FAST_CHECK,
+                                          useOpenCV);
+#endif
 
     if (mCornersFound)
     {
@@ -141,24 +158,40 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
     // Image histogram normalization and
     // BGR to Grayscale image conversion (if applicable)
     // MARTIN: Set to "false"
+#if CV_VERSION_MAJOR == 3
     if (image.channels() != 1 || (flags & CV_CALIB_CB_NORMALIZE_IMAGE))
+#else if CV_VERSION_MAJOR == 4
+    if (image.channels() != 1 || (flags & cv::CALIB_CB_NORMALIZE_IMAGE))
+#endif
     {
         cv::Mat norm_img(image.rows, image.cols, CV_8UC1);
 
         if (image.channels() != 1)
         {
+#if CV_VERSION_MAJOR == 3
             cv::cvtColor(image, norm_img, CV_BGR2GRAY);
+#else if CV_VERSION_MAJOR == 4
+            cv::cvtColor(image, norm_img, cv::COLOR_BGR2GRAY);
+#endif
             img = norm_img;
         }
 
+#if CV_VERSION_MAJOR == 3
         if (flags & CV_CALIB_CB_NORMALIZE_IMAGE)
+#else if CV_VERSION_MAJOR == 4
+        if (flags & cv::CALIB_CB_NORMALIZE_IMAGE)
+#endif
         {
             cv::equalizeHist(image, norm_img);
             img = norm_img;
         }
     }
 
+#if CV_VERSION_MAJOR == 3
     if (flags & CV_CALIB_CB_FAST_CHECK)
+#else if CV_VERSION_MAJOR == 4
+    if (flags & cv::CALIB_CB_FAST_CHECK)
+#endif
     {
         if (!checkChessboard(img, patternSize))
         {
@@ -189,13 +222,21 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             cv::Mat thresh_img;
 
             // convert the input grayscale image to binary (black-n-white)
+#if CV_VERSION_MAJOR == 3
             if (flags & CV_CALIB_CB_ADAPTIVE_THRESH)
+#else if CV_VERSION_MAJOR == 4
+            if (flags & cv::CALIB_CB_ADAPTIVE_THRESH)
+#endif
             {
                 int blockSize = lround(prevSqrSize == 0 ?
                     std::min(img.cols,img.rows)*(k%2 == 0 ? 0.2 : 0.1): prevSqrSize*2)|1;
 
                 // convert to binary
+#if CV_VERSION_MAJOR == 3
                 cv::adaptiveThreshold(img, thresh_img, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, blockSize, (k/2)*5);
+#else if CV_VERSION_MAJOR == 4
+                cv::adaptiveThreshold(img, thresh_img, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, (k/2)*5);
+#endif
             }
             else
             {
@@ -204,7 +245,11 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
                 int thresh_level = lround(mean - 10);
                 thresh_level = std::max(thresh_level, 10);
 
+#if CV_VERSION_MAJOR == 3
                 cv::threshold(img, thresh_img, thresh_level, 255, CV_THRESH_BINARY);
+#else if CV_VERSION_MAJOR == 4
+                cv::threshold(img, thresh_img, thresh_level, 255, cv::THRESH_BINARY);
+#endif
             }
 
             // MARTIN's Code
@@ -212,9 +257,13 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             // homogeneous dilation is performed, which is crucial for small,
             // distorted checkers. Use the CROSS kernel first, since its action
             // on the image is more subtle
+#if CV_VERSION_MAJOR == 3
             cv::Mat kernel1 = cv::getStructuringElement(CV_SHAPE_CROSS, cv::Size(3,3), cv::Point(1,1));
             cv::Mat kernel2 = cv::getStructuringElement(CV_SHAPE_RECT, cv::Size(3,3), cv::Point(1,1));
-
+#else if CV_VERSION_MAJOR == 4
+            cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(1,1));
+            cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3), cv::Point(1,1));
+#endif
             if (dilations >= 1)
                 cv::dilate(thresh_img, thresh_img, kernel1);
             if (dilations >= 2)
@@ -316,8 +365,13 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             corners.push_back(outputCorners.at(i)->pt);
         }
 
+#if CV_VERSION_MAJOR == 3
         cv::cornerSubPix(image, corners, cv::Size(11, 11), cv::Size(-1,-1),
                          cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+#else if CV_VERSION_MAJOR == 4
+        cv::cornerSubPix(image, corners, cv::Size(11, 11), cv::Size(-1,-1),
+                         cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1));
+#endif
 
         return true;
     }
@@ -1172,7 +1226,11 @@ Chessboard::generateQuads(std::vector<ChessboardQuadPtr>& quads,
     std::vector<cv::Vec4i> hierarchy;
 
     // Initialize contour retrieving routine
+#if CV_VERSION_MAJOR == 3
     cv::findContours(image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+#else if CV_VERSION_MAJOR == 4
+    cv::findContours(image, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+#endif
 
     std::vector< std::vector<cv::Point> > quadContours;
 
@@ -1238,7 +1296,11 @@ Chessboard::generateQuads(std::vector<ChessboardQuadPtr>& quads,
             dp = pt[1] - pt[2];
             double d4 = sqrt(dp.dot(dp));
 
+#if CV_VERSION_MAJOR == 3
             if (!(flags & CV_CALIB_CB_FILTER_QUADS) ||
+#else if CV_VERSION_MAJOR == 4
+            if (!(flags & cv::CALIB_CB_FILTER_QUADS) ||
+#endif
                 (d3*4 > d4 && d4*4 > d3 && d3*d4 < area*1.5 && area > minSize &&
                 d1 >= 0.15 * p && d2 >= 0.15 * p))
             {
@@ -1583,20 +1645,32 @@ Chessboard::checkChessboard(const cv::Mat& image, cv::Size patternSize) const
     bool result = false;
     for (float threshLevel = blackLevel; threshLevel < whiteLevel && !result; threshLevel += 20.0f)
     {
+#if CV_VERSION_MAJOR == 3
         cv::threshold(white, thresh, threshLevel + blackWhiteGap, 255, CV_THRESH_BINARY);
+#else if CV_VERSION_MAJOR == 4
+        cv::threshold(white, thresh, threshLevel + blackWhiteGap, 255, cv::THRESH_BINARY);
+#endif
 
         std::vector< std::vector<cv::Point> > contours;
         std::vector<cv::Vec4i> hierarchy;
 
         // Initialize contour retrieving routine
+#if CV_VERSION_MAJOR == 3
         cv::findContours(thresh, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+#else if CV_VERSION_MAJOR == 4
+        cv::findContours(thresh, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+#endif
 
         std::vector<std::pair<float, int> > quads;
         getQuadrangleHypotheses(contours, quads, 1);
 
+#if CV_VERSION_MAJOR == 3
         cv::threshold(black, thresh, threshLevel, 255, CV_THRESH_BINARY_INV);
-
         cv::findContours(thresh, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+#else if CV_VERSION_MAJOR == 4
+        cv::threshold(black, thresh, threshLevel, 255, cv::THRESH_BINARY_INV);
+        cv::findContours(thresh, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+#endif
         getQuadrangleHypotheses(contours, quads, 0);
 
         const size_t min_quads_count = patternSize.width * patternSize.height / 2;
