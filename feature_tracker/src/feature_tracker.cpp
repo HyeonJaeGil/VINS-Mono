@@ -35,11 +35,13 @@ FeatureTracker::FeatureTracker()
 
 void FeatureTracker::setMask()
 {
-    if(FISHEYE)
-        mask = fisheye_mask.clone();
-    else
-        mask = cv::Mat(ROW, COL, CV_8UC1, cv::Scalar(255));
+    // if(FISHEYE)
+    //     mask = fisheye_mask.clone();
+    // else
+    //     mask = cv::Mat(ROW, COL, CV_8UC1, cv::Scalar(255));
     
+    cv::rectangle(mask, cv::Point(100, 420), cv::Point(COL, ROW), cv::Scalar(0), -1);
+    cv::rectangle(mask, cv::Point(0, 0), cv::Point(COL, 150), cv::Scalar(0), -1);
 
     // prefer to keep features that are tracked for long time
     vector<pair<int, pair<cv::Point2f, int>>> cnt_pts_id;
@@ -76,6 +78,13 @@ void FeatureTracker::addPoints()
         ids.push_back(-1);
         track_cnt.push_back(1);
     }
+}
+
+
+void FeatureTracker::readMask(const cv::Mat & _mask)
+{
+    // revert mask for vins-mono: 255 -> 0, 0 -> 255
+    mask = ~_mask;
 }
 
 void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
