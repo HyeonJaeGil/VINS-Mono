@@ -12,7 +12,7 @@ extern std::string IMAGE_TOPIC;
 extern std::string MASK_TOPIC;
 extern std::string IMU_TOPIC;
 extern std::string FISHEYE_MASK;
-extern std::vector<std::string> CAM_NAMES;
+extern std::string CAM_NAMES;
 extern int MAX_CNT;
 extern int MIN_DIST;
 extern int WINDOW_SIZE;
