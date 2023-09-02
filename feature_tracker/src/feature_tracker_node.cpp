@@ -85,15 +85,7 @@ void img_mask_callback(const sensor_msgs::ImageConstPtr &img_msg,
 
     // handle mask msg
     cv_bridge::CvImageConstPtr mask_ptr;
-    sensor_msgs::Image mask_img;
-    mask_img.header = mask_msg->header;
-    mask_img.height = mask_msg->height;
-    mask_img.width = mask_msg->width;
-    mask_img.is_bigendian = mask_msg->is_bigendian;
-    mask_img.step = mask_msg->step;
-    mask_img.data = mask_msg->data;
-    mask_img.encoding = "mono8";
-    mask_ptr = cv_bridge::toCvCopy(mask_img, sensor_msgs::image_encodings::MONO8);
+    mask_ptr = cv_bridge::toCvCopy(mask_msg, sensor_msgs::image_encodings::MONO8);
 
 
     TicToc t_r;
@@ -164,7 +156,9 @@ void img_mask_callback(const sensor_msgs::ImageConstPtr &img_msg,
             for (unsigned int i = 0; i < trackerData.cur_pts.size(); i++)
             {
                 double len = std::min(1.0, 1.0 * trackerData.track_cnt[i] / WINDOW_SIZE);
-                cv::circle(tmp_img, trackerData.cur_pts[i], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
+                // cv::circle(tmp_img, trackerData.cur_pts[i], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
+                cv::circle(tmp_img, trackerData.cur_pts[i], 7, cv::Scalar(255 * (1 - len), 0, 255 * len), 1);
+                cv::circle(tmp_img, trackerData.cur_pts[i], 1, cv::Scalar(255 * (1 - len), 0, 255 * len), -1);
             }
             pub_match.publish(ptr->toImageMsg());
         }
