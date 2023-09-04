@@ -4,7 +4,7 @@
 imu_topic: "/imu0"
 image_topic: "/cam0/image_raw"
 mask_topic: "/cam0/image_mask"
-output_path: "/home/hj/output/"
+output_path: "/home/hj/output"
 
 #camera calibration 
 model_type: PINHOLE
@@ -43,8 +43,8 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
+   data: [0.24, 0.31, -0.2]
    # data: [0.31,-0.20, -0.24]
-   data: [0.24 , 0.31, -0.2]
 
 #feature traker paprameters
 max_cnt: 150            # max feature number in feature tracking

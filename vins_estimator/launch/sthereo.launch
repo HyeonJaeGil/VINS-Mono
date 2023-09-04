@@ -1,9 +1,9 @@
 <launch>
     <arg name="config_path" default = "$(find feature_tracker)/../config/sthereo/sthereo_config.yaml" />
     <arg name="vins_path" default = "$(find feature_tracker)/../config/../" />
-    <arg name="bag" default = "$(env HOME)/STHEREO-07.bag" />
+    <arg name="bag" default = "/media/hj/T7/rosbag/STHEREO-07.bag" />
     
-    <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
+    <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="screen">
         <param name="config_file" type="string" value="$(arg config_path)" />
         <param name="vins_folder" type="string" value="$(arg vins_path)" />
     </node>
@@ -23,6 +23,6 @@
 
     <include file="$(find vins_estimator)/launch/vins_rviz.launch" />
 
-    <node pkg="rosbag" type="play" name="rosbag" args="-d 1 $(arg bag)" required="true"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-d 1 $(arg bag)" />
     
 </launch>
